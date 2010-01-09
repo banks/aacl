@@ -4,41 +4,39 @@ AACL is (yet) Another ACL library for Kohana 3.
 
 ## Why another one?
 
-Simply because none really fitten my needs. I don't for a minute suggest it is any better than any others or that you should use this instead of others - it is just a library that fits my needs.
+Simply because none really fitted my needs. I don't for a minute suggest it is inherently better than any others or that you should use this instead of X library - it is just a library that fits my needs.
 You are free to use it and/or modify it if you think it will work well for you.
 
 ### My Aims
 
-What makes my needs so incompatible with others? Well my aims for an ACL are given below. I've not found anything else that was close enough to warrant modify, 
-esspecially since one of my core aims is simplicity and small amounts of clear code.
+What makes my needs so incompatible with other libraries? Well, my aims for an ACL are given below. I've not found anything else that was close enough to warrant forking, 
+especially since one of my core aims is simplicity and small amounts of clear code.
 
 I need an ACL to:
 
--  define *all* rules in database so that applications can provide a UI for simple but fine-grained control of user's prileges
+-  define *all* rules in database so that applications can provide a UI for simple but fine-grained control of user's privileges;
 
--  be flexible enough to actually work in real apps without special cases and hacks. That means being able to specify rules
-	such as "Moderaters can edit all posts, Normal Users can edit only their own posts"
+-  be flexible enough to actually work in real apps without special-cases and hacks. That means being able to specify rules
+	such as "Moderators can edit all posts, Normal Users can edit only their own posts";
 	
--  be simple enough that you don't need to get your head round arcane and abstract mappings of objects and resources
+-  be simple enough that you don't need to get your head round arcane and abstract mappings of objects and resources;
 
--  not require you to manually hard code lists of resources and permission types to be later checked against. All resources should be defined naturally with
-	short, functional code, not abstract mappings and list definitions.
+-  not require you to manually hard code lists of resources and permission types to be later checked against. All resources should be defined naturally with;
+	short, functional code, not abstract mappings and list definitions
 	
--  work with Kohana default Auth module. That means non-heirarchical user roles as managing heirarchies can get messy quickly.
+-  work with Kohana default Auth module. That means non-hierarchical user roles as managing hierarchies can get messy quickly; and
 
--  minimal amount of clear code required to check permissions in controllers (and potentially anywhere else it may make sense to)
+-  require a minimal amount of clear code to check permissions in controllers (and potentially anywhere else it may make sense to).
 
 If you think you know of an ACL library that fits these needs already then feel free to let me know I've missed it but 
 I've not found anything that really got close enough to warrant forking.
 
-I will give [Olly Morgan](http://github.com/ollym) some credit for writing such a simple and neat ACL library that, despite ultimately not being quite what I need, inspired me to
+I will give however  credit [Olly Morgan](http://github.com/ollym) for writing such a simple and neat ACL library that, despite ultimately not being quite what I need, inspired me to
 write this.
-
-------
 
 ## User Guide
 
-This usergide is intended to explain the (hopefully simple) concepts and implementation of AACL. In each section, concepts go first, then implementation then examples.
+This user guide is intended to explain the (hopefully simple) concepts and implementation of AACL. In each section, concepts go first, then implementation then examples.
 
 ### Auth integration: Users and Roles
 
@@ -47,9 +45,12 @@ Since I use Sprig exclusively, I also use my [Sprig Auth Driver](http://github.c
 an ORM User/Auth driver should work just as well.
 
 This means:
-1.  Users and roles have a many-to-many mapping
-2.  Roles are non-heirarchical and no role is given special treatment
-3.  The only exception to 2. is the 'login' role which all active users must have. 
+
+1.	Users and roles have a many-to-many mapping
+
+2.	Roles are non-heirarchical and no role is given special treatment
+
+3.	The only exception to 2. is the 'login' role which all active users must have. 
 	In reality you may choose to special case this in a UI and represent it as an 'active account' checkbox rather 
 	than requireing end-users to understand that it is different from other roles.
 
