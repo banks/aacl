@@ -48,22 +48,22 @@ This means:
 
 1.	Users and roles have a many-to-many mapping
 
-2.	Roles are non-heirarchical and no role is given special treatment
+2.	Roles are non-hierarchical and no role is given special treatment
 
 3.	The only exception to 2. is the 'login' role which all active users must have. 
 	In reality you may choose to special case this in a UI and represent it as an 'active account' checkbox rather 
-	than requireing end-users to understand that it is different from other roles.
+	than requiring end-users to understand that it is different from other roles.
 
 ### Sprig and other ORMs
 
 AACL ships with a Sprig based Rule model and Sprig based class for easily turning Sprig models into Access Controlled Resources. 
-It should be relatively trivial to override these with ORM (or other library) specific versions and be able to use most core functionality.
+It should be relatively trivial to override these with ORM (or other library) specific versions and be able to use all core functionality.
 
 ### Concept: ACL Resources
 
 Any PHP class that implements `AACL_Resource` interface is considered a resource. This means that just by implementing it, rules can be added based on that object.
 
-AACL ships with two abstract Resource classes `Controller_AACL` and `Sprig_AACL` which allow and extending controllers or models to be automatically become valid resources
+AACL ships with two abstract Resource classes `Controller_AACL` and `Sprig_AACL` which allow any extending controllers or models to automatically become valid resources
 against which access rules can be created.
 
 #### AACL_Resource Interface
@@ -71,28 +71,30 @@ against which access rules can be created.
 The `AACL_Resource` interface defines three methods:
 
 -  **acl_id()**
+	
 	Must return a string that uniquely identifies the current object as a resource.
 	Convention is for controllers to return as `c:controller_name` and models as `m:model_name.primary_key_value`
-	Remember that dot in model - it is significant!
+	Remember that dot in model identifier - it is significant!
 	
 -  **acl_actions($return_current = FALSE)**
-	This method servers a dual purpose. When the argument $return_current is false, the method should return an array of string names of each action
+	
+	This method servers a dual purpose. When the argument `$return_current` is false, the method should return an array of string names, one for each action
 	that can be carried out on the resource. For no specific actions, an empty array should be returned.
 	-  `Controller_AACL` returns an array containing the names of all public action methods automatically.
 	-  `Sprig_AACL` returns actions 'create', 'read', 'update', 'delete'. These can be changed by overriding this method in specific models.
 	
 -  **acl_conditions(Model_User $user = NULL, $condition = NULL)**
-	This method also servers a dual purpose: it bothe defines available conditions and checks them.
+	
+	This method also servers a dual purpose: it both defines available conditions and checks them.
 	
 	-  When both arguments are NULL, the function should return an array containing information about any special conditions the resource supports. More on what conditions are below.
 	The format of this array is `array('condition_id' => 'Nice description for UIs')`.
 	
-	-  When a user object and condition id are passed, the funtion should return a boolean indicating whther the condition has passed or failed.
-		That means conditions are all defined in one place.
+	-  When a user object and condition id are passed, the funtion should return a boolean indicating whether or not the condition has passed.
 		
 ### Resource Conditions
 
-`AACL_Resource` objects can define conditions which allow rules to describe fin-grained control. Since conditions are resource-specific only conditions defined by the resource
+`AACL_Resource` objects can define conditions which allow rules to provide fine-grained control. Since conditions are resource specific, only conditions defined by the resource
 are available when defining rules for that resource.
 
 A typical and common use for this is allowing Users to edit their own posts but not others'. The implementation for such a condition is given below.
@@ -106,19 +108,17 @@ A typical and common use for this is allowing Users to edit their own posts but 
     	
     	public function acl_conditions(Model_User $user = NULL, $condition = NULL)
     	{
-    		$conditions = array(
-				'is_author' => 'user is post author',
-			);
-    	
     		if (is_null($user) OR is_null($condition))
     		{
     			// Return condition definition(s)
     			// Here we only have one condition but we could have many
-    			return $conditions;
+    			return array(
+					'is_author' => 'user is post author',
+				);
     		}
     		else
     		{
-    			// Condition logic goes here. Complex conditions may be separated to other methods
+    			// Condition logic goes here. Complex condition logic could be implemented in another method and called here.
 				switch ($condition)
 				{
 					case 'is_author':
@@ -138,10 +138,10 @@ and simple way of adding fine-grained user/resource specific rules in a general 
 
 ### AACL Rules
 
-Once you have some Controllers, Models or other objects defined as AACL_Resources, you can grant access to specific uuser roles.
+Once you have some Controllers, Models or other objects defined as AACL_Resources, you can grant access to specific user roles.
 
 The first major concept here is that rules are ONLY 'allow' type rules. 
-This is to keep things simple and to prevent the need for having a role heirarchy to decide which rules get precedence.
+This is to keep things simple and to prevent the need for having a role hierarchy to decide which rules take precedence.
 
 Once `AACL::check($resource)` has been called, the user must be granted access to `$resource` by at least one rule otherwise the check fails.
 
@@ -150,23 +150,29 @@ Rules do have a simple inheritance to them in that they can be made more or less
 A rule is defined using the `grant()` function described below:
 
 **AACL::grant(mixed $role, string $resource_id, string $action = NULL, string $condition = NULL)**
+
 Params:
+
 -  **$role**
+
 	Can be either a `Model_Role` object or a string role name. This is the role that the rule applies to.
 
 -  **$resource_id**
-	A string identifying the resource the rule applies to. note that dots in resource IDs indicate a level or specificity and can be used to 
-	define general rules. For example, `m:post.34` would grant access to Model_Post object with id 34, `m:post` would grant access to all post objects.
-	The wildcard `*` can also be used (alone) to match any resource. This will grant the role in question comeplte access to everything though so is
-	probably only going to be used for at most one role per application!
+
+	A string identifying the resource the rule applies to. Note that dots in resource IDs indicate a level or specificity. 
+	For example, `m:post.34` would grant access to Model_Post object with id 34, `m:post` would grant access to all post objects.
+	The wildcard `*` can also be used (alone) to match any resource. This will grant the role in question complete access to everything though so is
+	probably only going to be used, at most, for only one role per application!
 
 -  **$action**
-	Specifies a specific action of that resource which may be accessed. For example if role is `m:post` and action is 'delete', access will be granted to delete any post object.
-	If the action is NULL or does not exist (i.e. is not returned by the resource's acl_actions() method) then all actions for the resource will be matched by the rule.
+
+	Specifies a specific action of that resource which may be accessed. For example if role is `m:post` and action is `delete`, access will be granted to delete any post object.
+	If the action is NULL or does not exist (i.e. is not returned by the resource's acl_actions() method) then access will be granted for any action on the resource.
 	
 -  **$conditions**
+
 	Specifies a condition of the resource which must be met to allow access. For example, `AACL::grant('login', 'm:post', 'edit', 'is_author');` 
-	allows access to edit a post to any user *provided* that they are the post's author. If the condition passed doesn't match a valid condition 
+	allows any user access to edit a post *provided* that they are the post's author. If the condition string passed doesn't match a valid condition 
 	returned by `$resource->acl_conditions()` then the rule will NEVER match!
 
 To grant access to multiple (but not all) actions of a resource, multiple rules should be used. For example:
@@ -176,6 +182,7 @@ To grant access to multiple (but not all) actions of a resource, multiple rules 
     AACL::grant('moderator', 'm:post', 'edit');				// ... but can't delete them
     AACL::grant('login', 'm:post', 'view');					// Normal users can view all posts...
     AACL::grant('login', 'm:post', 'edit', 'is_author');	// ... but only edit their own
+    AACL::grant('sales', 'm:pages.32', 'edit');				// Sales team can edit page with ID 32 (ths is probably vital for one of their campaigns...) but no other pages
 
 #### Revoking access
 
@@ -183,7 +190,7 @@ To grant access to multiple (but not all) actions of a resource, multiple rules 
 
 #### Rule Specificity
 
-If you grant a rule which is *more* permissive than a rule that currently exists, the current rule will be automatically deleted since it is now logically useless.
+If you grant a rule which is *more* permissive than one or more rules that currently exist, the current rules will be automatically deleted since they are now logically useless.
 
 ### Checking Permissions
 
@@ -192,13 +199,23 @@ One of the key requirements for this library is to make checking access rights a
 All checking is done using `AACL::check()` described below:
 
 **AACL::check($resource, $action = NULL)**
--  **$resource** either a string ID or an AACL_Resource object. If an object is passed, `check()` will attempt to get the current action from the resource automatically
+
+-  **$resource** 
+
+	Either a string resource ID or an AACL_Resource object. If an object is passed, `check()` will attempt to get the current action from the resource automatically
 	using `$reource->acl_actions(TRUE)`. If this returns a string action then that action will be used for checking without having to specify the `$action` parameter.
+	
 	This means that, since a controller object knows the currently executing action, the current controller action can be checked simply with `AACL::check($this)`.
 	Since models don't inherently know which action is being requested, `$action` parameter must be specified (or permission to access all actions will be required).
 	
--  **$action** if the resource doesn't know inherently which action is being requested, it can be specified here. If specified here, it will over-ride the resource's 
-	response so to check the permission of a *different* action of the same controller (not sure why you would want to but still...) you could use:
+	By extension, all actions in a controller will automatically be protected according to their action-specific rules simply by calling `AACL::check($this)` in the controller's
+	`before()` method.
+	
+-  **$action** 
+
+	If the resource doesn't know inherently which action is being requested, it can be specified here. If specified here, it will over-ride the 
+	action the resource object claims to be executing. So to check the permission of a *different* action of the same controller 
+	(not sure why you would want to but still...) you could use:
 	
 	    public function action_one()
 	    {
@@ -208,17 +225,47 @@ All checking is done using `AACL::check()` described below:
 	    	// Check permission for other action
 	    	AACL::check($this, 'other');
 	    }
+
+#### Failing check()
+
+If the user doesn't have access to the required object and action, AACL throws an exception which must be handled to resolve the issue.
+
+If the user isn't logged in, a `AACL_Exception_401` is thrown which should be caught and the user re-directed to a login form.
+
+If the user is logged in but lacks the privileges to access a resource, an `AACL_Exception_403` is throw. 
+It is left to the developer to catch this and display an appropriate message.
+
+These should both be caught in `bootstrap.php` something like this:
+
+    $request = Request::instance($uri);
+    
+    try
+    {
+    	$request->execute();
+    }
+    catch (AACL_Exception_401 $e)
+    {
+    	// Redirect to login
+    }
+    catch (AACL_Exception_403 $e)
+    {
+    	// Issue request for access denied page or just display a template
+    }
+    
+    echo $request
+    		->send_headers()
+    		->response;
 	
 ### Listing Resources
 
 A major motivation for this library is to make it easy to create Rules using a UI. To facilitate this, all potential resources defined in the application can be found using
 `AACL::list_resources()`. This returns a multi-dimensional array listing all the resources and any actions or conditions they define.
 
-It works by scanning the file system and using reflection so in a big app there is likely to take some time. I feel that is not a big deal here though as it should only ever be done in 
-admin control panels not in public parts of the app and it allows a very powerful system that doesn't require maintaining lenthtly and complex mappings of classes and resources.
+It works by scanning the file system and using reflection so in a big app this is likely to take some time. I feel that is not a big deal here though as it should only ever be done in 
+admin control panels not in public parts of the app and it allows a very powerful system that doesn't require maintaining lenthly and complex mappings of classes and resources.
 
-Note that `list_resources()` will only return the basic types in the case of models, not every possible model id. It is left for the developer to retrieve this data if necessary for 
-a UI.
+Note that `list_resources()` will only return the basic types in the case of models, not every possible model id. In other words you will get a single entry 
+for `m:post` rather than `m:post.1, m:post.2, ...`. It is left for the developer to retrieve this data if necessary for a UI.
 
 ### UI
 
