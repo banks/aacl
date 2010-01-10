@@ -188,15 +188,29 @@ Params:
 To grant access to multiple (but not all) actions of a resource, multiple rules should be used. For example:
 
     AACL::grant('admin', 'm:post'); 						// Grant all rights to admins for post objects
-    AACL::grant('moderator', 'm:post', 'view'); 			// Moderators can view or edit any post...
-    AACL::grant('moderator', 'm:post', 'edit');				// ... but can't delete them
+    
+    AACL::grant('moderator', 'm:post', 'view'); 			// Moderators can view...
+    AACL::grant('moderator', 'm:post', 'edit');				// ... or edit any post
+    
     AACL::grant('login', 'm:post', 'view');					// Normal users can view all posts...
     AACL::grant('login', 'm:post', 'edit', 'is_author');	// ... but only edit their own
-    AACL::grant('sales', 'm:pages.32', 'edit');				// Sales team can edit page with ID 32 (ths is probably vital for one of their campaigns...) but no other pages
+    
+    AACL::grant('sales', 'm:page.32', 'edit');				// Sales team can edit page with ID 32 (ths is probably vital 
+    														// for one of their campaigns...) but no other pages
 
 #### Revoking access
 
-`AACL::revoke()` is used to remove rules and accepts exactly the same arguments used to grant the rules.
+`AACL::revoke()` is used to remove rules and accepts exactly the same arguments used to grant the rules. 
+Note that the arguments don't have to exactly match a defined rule to delete it. For example
+
+	AACL::grant('staff', 'm:post', 'edit');					// 1
+	AACL::grant('staff', 'm:post', 'delete');				// 2
+	AACL::grant('staff', 'm:comment', 'delete');			// 3
+	
+	AACL::revoke('staff', 'm:post', 'edit');				// Removes 1 from above
+	AACL::revoke('staff', 'm:post');						// Removes 1 AND 2 from above
+	AACL::revoke('staff', '*');								// Removes all rules for 'staff' (i.e. they now have access to nothing)
+
 
 #### Rule Specificity
 
@@ -215,15 +229,19 @@ All checking is done using `AACL::check()` described below:
 	The AACL_Resource being requested. `check()` will attempt to get the current action from the resource automatically
 	using `$reource->acl_actions(TRUE)`. If this returns a string action then that action will be used for checking without having to specify the `$action` parameter.
 	
-	Note that the string resource ID can't be specified since the `check()` function requires aaccess to the objects acl_* methods. Even if a method of mapping IDs to objects was 
-	implemented, there are issues creating instances of controllers and working out which URI to specify etc. This means that currently there is no way to check permisions on a 
-	controller resource other than the one in which the call to `AACL::check()` resides. In practice this is unlikely to be a real limitiation.
+	Note that the string resource ID can't be specified since the `check()` function requires access to the objects acl_* methods. It
+	is simpler not to have to define mappings from id back to class name in some separate global class in order to create instances.
+	If I think of a way to make this neat and relatively seemless I may implement it but I don't feel this is a big issue.
 	
-	This means that, since a controller object knows the currently executing action, the current controller action can be checked simply with `AACL::check($this)`.
-	Since models don't inherently know which action is being requested, `$action` parameter must be specified (or permission to access all actions will be required).
+	This does mean that currently there is no real way to check permisions on a controller resource other than the one in which the call to `AACL::check()` resides. 
+	In practice this is unlikely to be a real limitiation.
 	
-	By extension, all actions in a controller will automatically be protected according to their action-specific rules simply by calling `AACL::check($this)` in the controller's
-	`before()` method.
+	Since a controller object knows the currently executing action, the current controller action can be checked simply with `AACL::check($this)`.
+	Since models don't inherently know which action is being requested, `$action` parameter must be specified otherwise the user will need to have access to ALL actions
+	of the resource for the check to pass.
+	
+	Since controllers inherently know about the currently executing action, all actions in a controller will automatically be protected (according to their action-specific 
+	rules) simply by calling `AACL::check($this)` in the controller's `before()` method.
 	
 -  **$action** 
 

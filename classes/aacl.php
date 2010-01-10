@@ -16,7 +16,7 @@ class AACL
 	/**
 	 * All rules that apply to the currently logged in user
 	 * 
-	 * @var array	contains Model_AACL_Rule objects
+	 * @var	array	contains Model_AACL_Rule objects
 	 */
 	protected static $_rules;
 	
@@ -167,7 +167,8 @@ class AACL
 	/**
 	 * Returns a list of all valid resource objects based on the filesstem adn reflection
 	 * 
-	 * @param	mixed	string resource_id [optional] if provided, the info for that specific resource ID is returned, if TRUE a flat array of just the ids is returned
+	 * @param	mixed	string resource_id [optional] if provided, the info for that specific resource ID is returned, 
+	 * 					if TRUE a flat array of just the ids is returned
 	 * @return	array 
 	 */
 	public static function list_resources($resource_id = FALSE)
@@ -219,7 +220,6 @@ class AACL
 		{
 			return isset(self::$_resources[$resource_id]) ? self::$_resources[$resource_id] : NULL;
 		}
-		
 		
 		return self::$_resources;
 	}
