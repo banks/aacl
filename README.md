@@ -57,7 +57,7 @@ This means:
 ### Sprig and other ORMs
 
 AACL ships with a Sprig based Rule model and Sprig based class for easily turning Sprig models into Access Controlled Resources. 
-It should be relatively trivial to override these with ORM (or other library) specific versions and be able to use all core functionality.
+It should be relatively trivial to modify the library to work with other ORMs but as this is only likely to be used by me for now, a flexible driver system seems unnecessary.
 
 ### Concept: ACL Resources
 
@@ -68,22 +68,22 @@ against which access rules can be created.
 
 #### AACL_Resource Interface
 
-The `AACL_Resource` interface defines three methods:
+The `AACL_Resource` interface defines four methods:
 
--  **acl_id()**
+-  **public function acl_id()**
 	
 	Must return a string that uniquely identifies the current object as a resource.
 	Convention is for controllers to return as `c:controller_name` and models as `m:model_name.primary_key_value`
 	Remember that dot in model identifier - it is significant!
 	
--  **acl_actions($return_current = FALSE)**
+-  **public function acl_actions($return_current = FALSE)**
 	
 	This method servers a dual purpose. When the argument `$return_current` is false, the method should return an array of string names, one for each action
 	that can be carried out on the resource. For no specific actions, an empty array should be returned.
 	-  `Controller_AACL` returns an array containing the names of all public action methods automatically.
 	-  `Sprig_AACL` returns actions 'create', 'read', 'update', 'delete'. These can be changed by overriding this method in specific models.
 	
--  **acl_conditions(Model_User $user = NULL, $condition = NULL)**
+-  **public function acl_conditions(Model_User $user = NULL, $condition = NULL)**
 	
 	This method also servers a dual purpose: it both defines available conditions and checks them.
 	
@@ -91,7 +91,17 @@ The `AACL_Resource` interface defines three methods:
 	The format of this array is `array('condition_id' => 'Nice description for UIs')`.
 	
 	-  When a user object and condition id are passed, the funtion should return a boolean indicating whether or not the condition has passed.
-		
+	
+-  **public static function acl_instance($class_name)**
+
+	This method is used for auto-discovery of available resources. Since the resource ID, actions and conditions must be obtained from an object, 
+	we need a way to get and instance of the object given only the class name. Not that the object returned shoul not be used for anything except calling `acl_*` methods
+	to discover resource properties. 
+
+Note that the `Model_AACL_Rule` itself extends `Sprig_AACL`. Instead of the default CRUD actions though it just specifies `grant` and `revoke` actions. This means you can
+create rules about whether a role can itsef grant or revoke access! Note that the checking is not automatic though. That would prevent installers from creating rules or similar
+due to not having a user logged in yet! It is still up to the developer to check the user has permission to grant or revoke using check().
+
 ### Resource Conditions
 
 `AACL_Resource` objects can define conditions which allow rules to provide fine-grained control. Since conditions are resource specific, only conditions defined by the resource
@@ -198,12 +208,16 @@ One of the key requirements for this library is to make checking access rights a
 
 All checking is done using `AACL::check()` described below:
 
-**AACL::check($resource, $action = NULL)**
+**AACL::check(AACL_Resource $resource, $action = NULL)**
 
 -  **$resource** 
 
-	Either a string resource ID or an AACL_Resource object. If an object is passed, `check()` will attempt to get the current action from the resource automatically
+	The AACL_Resource being requested. `check()` will attempt to get the current action from the resource automatically
 	using `$reource->acl_actions(TRUE)`. If this returns a string action then that action will be used for checking without having to specify the `$action` parameter.
+	
+	Note that the string resource ID can't be specified since the `check()` function requires aaccess to the objects acl_* methods. Even if a method of mapping IDs to objects was 
+	implemented, there are issues creating instances of controllers and working out which URI to specify etc. This means that currently there is no way to check permisions on a 
+	controller resource other than the one in which the call to `AACL::check()` resides. In practice this is unlikely to be a real limitiation.
 	
 	This means that, since a controller object knows the currently executing action, the current controller action can be checked simply with `AACL::check($this)`.
 	Since models don't inherently know which action is being requested, `$action` parameter must be specified (or permission to access all actions will be required).
@@ -269,4 +283,4 @@ for `m:post` rather than `m:post.1, m:post.2, ...`. It is left for the developer
 
 ### UI
 
-A basic rule management UI will hoepfully be added to the module at some point to help get started. It will naturally be disabled in all but 'developement' environment.
+A basic rule management UI will hopefully be added to the module at some point to help get started. It will naturally be disabled in all but 'developement' environment.
