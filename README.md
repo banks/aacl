@@ -21,17 +21,14 @@ I need an ACL to:
 	
 -  be simple enough that you don't need to get your head round arcane and abstract mappings of objects and resources;
 
--  not require you to manually hard code lists of resources and permission types to be later checked against. All resources should be defined naturally with;
-	short, functional code, not abstract mappings and list definitions
+-  not require you to manually hard code lists of resources and permission types to be later checked against. All resources should be defined naturally with short, functional code, not abstract mappings and list definitions;
 	
 -  work with Kohana default Auth module. That means non-hierarchical user roles as managing hierarchies can get messy quickly; and
 
 -  require a minimal amount of clear code to check permissions in controllers (and potentially anywhere else it may make sense to).
 
 If you think you know of an ACL library that fits these needs already then feel free to let me know I've missed it but 
-I've not found anything that really got close enough to warrant forking.
-
-I will give however  credit [Olly Morgan](http://github.com/ollym) for writing such a simple and neat ACL library that, despite ultimately not being quite what I need, inspired me to
+I've not found anything that really got close enough to warrant forking. I will however credit [Olly Morgan](http://github.com/ollym) for writing such a simple and neat ACL library that, despite ultimately not being quite what I need, inspired me to
 write this.
 
 ## User Guide
