@@ -1,17 +1,17 @@
 <?php defined('SYSPATH') or die ('No direct script access.');
 
 /**
- * ACL Resource interface
+ * AACL Resource interface
  *
  * @see            http://github.com/banks/aacl
- * @package        ACL
+ * @package        AACL
  * @uses        Auth
  * @uses        Sprig
  * @author        Paul Banks
  * @copyright    (c) Paul Banks 2010
  * @license        MIT
  */
-interface ACL_Resource {
+interface AACL_Resource {
 
 	/**
 	 * Gets a unique ID string for this resource
@@ -64,4 +64,4 @@ interface ACL_Resource {
 	 */
 	public static function acl_instance($class_name);
     
-} // End ACL_Resource
+} // End AACL_Resource

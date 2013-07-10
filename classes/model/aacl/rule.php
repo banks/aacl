@@ -4,14 +4,14 @@
  * Access rule model
  *
  * @see            http://github.com/banks/aacl
- * @package        ACL
+ * @package        AACL
  * @uses        Auth
  * @uses        ORM
  * @author        Paul Banks
  * @copyright    (c) Paul Banks 2010
  * @license        MIT
  */
-class Model_ACL_Rule extends ORM_ACL {
+class Model_AACL_Rule extends ORM_AACL {
 
 	protected static $_acl_actions = array(
 		'grant',
@@ -45,7 +45,7 @@ class Model_ACL_Rule extends ORM_ACL {
 	// TODO: validation
 
 	/**
-	 * ACL action
+	 * AACL action
 	 * grant access / create rule
 	 *
 	 * @param array $data
@@ -61,12 +61,12 @@ class Model_ACL_Rule extends ORM_ACL {
 
 		$this->values($data);
 		$this->check();
-		ACL::grant($this->role, $this->resource, $this->action, $this->condition);
+		AACL::grant($this->role, $this->resource, $this->action, $this->condition);
 		return $this;
 	}
 
 	/**
-	 * ACL action
+	 * AACL action
 	 * revoke access / delete rule
 	 *
 	 * @return bool
@@ -79,7 +79,7 @@ class Model_ACL_Rule extends ORM_ACL {
 			throw new Exception('rule doesn\'t exist');
 		}
 
-		ACL::revoke($this->role, $this->resource, $this->action, $this->condition);
+		AACL::revoke($this->role, $this->resource, $this->action, $this->condition);
 
 		return TRUE;
 	}
@@ -87,12 +87,12 @@ class Model_ACL_Rule extends ORM_ACL {
 	/**
 	 * Check if rule matches current request
 	 *
-	 * @param ACL_Resource $resource ACL_Resource object or it's id that user requested access to
+	 * @param AACL_Resource $resource AACL_Resource object or it's id that user requested access to
 	 * @param string               $action action requested [optional]
-	 * @param Model_User           $user ACL instance
+	 * @param Model_User           $user AACL instance
 	 * @return bool
 	 */
-	public function allows_access_to(ACL_Resource $resource, $action = NULL, Model_User $user = NULL)
+	public function allows_access_to(AACL_Resource $resource, $action = NULL, Model_User $user = NULL)
 	{
 		if (empty($this->resource))
 		{
@@ -206,4 +206,4 @@ class Model_ACL_Rule extends ORM_ACL {
 		return parent::create($validation);
 	}
 
-} // End Model_ACL_Core_Rule
+} // End Model_AACL_Core_Rule

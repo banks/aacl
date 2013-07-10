@@ -4,14 +4,14 @@
  * Base class for access controlled ORM Models
  *
  * @see          http://github.com/banks/aacl
- * @package      ACL
+ * @package      AACL
  * @uses         Auth
  * @uses         ORM
  * @author       Paul Banks
  * @copyright    (c) Paul Banks 2010
  * @license      MIT
  */
-abstract class ORM_ACL extends ORM implements ACL_Resource {
+abstract class ORM_AACL extends ORM implements AACL_Resource {
 
 	/**
 	 * @var array
@@ -30,7 +30,7 @@ abstract class ORM_ACL extends ORM implements ACL_Resource {
 	protected $_acl_id = '';
 
 	/**
-	 * ACL_Resource::acl_id() implementation
+	 * AACL_Resource::acl_id() implementation
 	 *
 	 * Note: keeps a cache of the acl_id and returns it if the model hasn't changed
 	 *
@@ -57,7 +57,7 @@ abstract class ORM_ACL extends ORM implements ACL_Resource {
 	}
 
 	/**
-	 * ACL_Resource::acl_actions() implementation
+	 * AACL_Resource::acl_actions() implementation
 	 *
 	 * @param    bool $return_current [optional]
 	 * @return    mixed
@@ -75,7 +75,7 @@ abstract class ORM_ACL extends ORM implements ACL_Resource {
 	}
 
 	/**
-	 * ACL_Resource::acl_conditions() implementation
+	 * AACL_Resource::acl_conditions() implementation
 	 *
 	 * @param    Model_User $user [optional] logged in user model
 	 * @param    string     $condition [optional] condition to test
@@ -94,7 +94,7 @@ abstract class ORM_ACL extends ORM implements ACL_Resource {
 	}
 
 	/**
-	 * ACL_Resource::acl_instance() implementation
+	 * AACL_Resource::acl_instance() implementation
 	 *
 	 * Note that the object instance returned should not be used for anything except querying the acl_* methods
 	 *
@@ -108,4 +108,4 @@ abstract class ORM_ACL extends ORM implements ACL_Resource {
 		return ORM::factory($model_name);
 	}
 
-} // End ORM_ACL
+} // End ORM_AACL

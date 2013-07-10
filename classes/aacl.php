@@ -1,22 +1,22 @@
 <?php defined('SYSPATH') or die ('No direct script access.');
 
 /**
- * Another ACL
+ * Another AACL
  *
  * @see            http://github.com/banks/aacl
- * @package        ACL
+ * @package        AACL
  * @uses        Auth
  * @uses        ORM
  * @author        Paul Banks
  * @copyright    (c) Paul Banks 2010
  * @license        MIT
  */
-class ACL {
+class AACL {
 
 	/**
 	 * All rules that apply to the currently logged in user
 	 *
-	 * @var    array    contains Model_ACL_Rule objects
+	 * @var    array    contains Model_AACL_Rule objects
 	 */
 	protected static $_rules;
 
@@ -44,7 +44,7 @@ class ACL {
 	 * @param string            $resource resource identifier [optional]
 	 * @param string            $action action [optional]
 	 * @param string            $condition condition [optional]
-	 * @throws ACL_Exception
+	 * @throws AACL_Exception
 	 * @return void
 	 */
 	public static function grant($role = NULL, $resource = NULL, $action = NULL, $condition = NULL)
@@ -53,19 +53,19 @@ class ACL {
 		if ( ! is_null($role))
 		{
 			// Normalize $role
-			$role = ACL::normalize_role($role);
+			$role = AACL::normalize_role($role);
 
 			// Check role exists
 			if ( ! $role->loaded())
 			{
-				throw new ACL_Exception('Unknown role :role passed to ACL::grant()',
+				throw new AACL_Exception('Unknown role :role passed to AACL::grant()',
 					array(':role' => $role->name));
 			}
 
 		}
 
 		// Create rule
-		ACL::create_rule(
+		AACL::create_rule(
 			array(
 				'role_id' => $role,
 				'resource' => $resource,
@@ -87,7 +87,7 @@ class ACL {
 	 */
 	public static function revoke($role = NULL, $resource = NULL, $action = NULL, $condition = NULL)
 	{
-		$model = ORM::factory('ACL_Rule');
+		$model = ORM::factory('AACL_Rule');
 
 		if (is_null($role))
 		{
@@ -96,7 +96,7 @@ class ACL {
 		else
 		{
 			// Normalize $role
-			$role = ACL::normalize_role($role);
+			$role = AACL::normalize_role($role);
 
 			// Check role exists
 			if ( ! $role->loaded())
@@ -136,17 +136,17 @@ class ACL {
 	 * Method, that allows to check any rule from database in any place of project.
 	 * Works with string presentations of resources, actions, roles and conditions
 	 *
-	 * @param ACL_Resource $resource
+	 * @param AACL_Resource $resource
 	 * @param string        $action
 	 * @return bool
 	 */
-	public static function access(ACL_Resource $resource, $action = NULL)
+	public static function access(AACL_Resource $resource, $action = NULL)
 	{
 		try
 		{
-			ACL::check($resource, $action);
+			AACL::check($resource, $action);
 		}
-		catch (ACL_Exception $e)
+		catch (AACL_Exception $e)
 		{
 			return FALSE;
 		}
@@ -158,21 +158,21 @@ class ACL {
 	 * Checks user has permission to access resource
 	 * works with unauthenticated users (role_id = NULL)
 	 *
-	 * @param    ACL_Resource $resource ACL_Resource object being requested
+	 * @param    AACL_Resource $resource AACL_Resource object being requested
 	 * @param    string        $action action identifier [optional]
-	 * @throws   ACL_Exception_401 To identify permission or authentication failure
-	 * @throws   ACL_Exception_403 To identify permission or authentication failure
+	 * @throws   AACL_Exception_401 To identify permission or authentication failure
+	 * @throws   AACL_Exception_403 To identify permission or authentication failure
 	 * @return   void
 	 */
-	public static function check(ACL_Resource $resource, $action = NULL)
+	public static function check(AACL_Resource $resource, $action = NULL)
 	{
-		$user = ACL::get_loggedin_user();
+		$user = AACL::get_loggedin_user();
 
 		// User is logged in, check rules
-		$rules = ACL::_get_rules($user);
+		$rules = AACL::_get_rules($user);
 
 		/**
-		 * @var Model_ACL_Rule $rule
+		 * @var Model_AACL_Rule $rule
 		 */
 		foreach ($rules as $rule)
 		{
@@ -186,30 +186,30 @@ class ACL {
 		// No access rule matched
 		if ($user)
 		{
-			throw new ACL_Exception_403;
+			throw new AACL_Exception_403;
 		}
 		else
 		{
-			throw new ACL_Exception_401;
+			throw new AACL_Exception_401;
 		}
 	}
 
     /**
      * Almost the same as check() but doesn't throw exceptions and answer is boolean
 	 *
-	 * @param    ACL_Resource $resource ACL_Resource object being requested
+	 * @param    AACL_Resource $resource AACL_Resource object being requested
 	 * @param    string        $action action identifier [optional]
 	 * @return   boolean 
 	 */
-	public static function check_if(ACL_Resource $resource, $action = NULL)
+	public static function check_if(AACL_Resource $resource, $action = NULL)
 	{
-		$user = ACL::get_loggedin_user();
+		$user = AACL::get_loggedin_user();
 
 		// User is logged in, check rules
-		$rules = ACL::_get_rules($user);
+		$rules = AACL::_get_rules($user);
 
 		/**
-		 * @var Model_ACL_Rule $rule
+		 * @var Model_AACL_Rule $rule
 		 */
 		foreach ($rules as $rule)
 		{
@@ -223,7 +223,7 @@ class ACL {
 	}
 
 	/**
-	 * Create an ACL rule
+	 * Create an AACL rule
 	 *
 	 * @param array $fields optional fields' values
 	 *
@@ -231,7 +231,7 @@ class ACL {
 	 */
 	public static function create_rule(array $fields = array())
 	{
-		ORM::factory('ACL_Rule')->values($fields)->create();
+		ORM::factory('AACL_Rule')->values($fields)->create();
 	}
 
 	/**
@@ -245,29 +245,29 @@ class ACL {
 	 */
 	public static function _get_rules($user = FALSE, $force_load = FALSE)
 	{
-		if ( ! isset(ACL::$_rules) || $force_load)
+		if ( ! isset(AACL::$_rules) || $force_load)
 		{
-			$select_query = ORM::factory('ACL_Rule')
+			$select_query = ORM::factory('AACL_Rule')
 				// User is guest
 				->where('role_id', '=', NULL);
 
 			// Get rules for user
 			if ($user instanceof Model_User and $user->loaded())
 			{
-				ACL::$_rules = $select_query->or_where('role_id', 'IN', $user->roles->find_all()->as_array());
+				AACL::$_rules = $select_query->or_where('role_id', 'IN', $user->roles->find_all()->as_array());
 			}
 			// Get rules for role
 			elseif ($user instanceof Model_Role and $user->loaded())
 			{
-				ACL::$_rules = $select_query->or_where('role_id', '=', $user->id);
+				AACL::$_rules = $select_query->or_where('role_id', '=', $user->id);
 			}
 
-			ACL::$_rules = $select_query
+			AACL::$_rules = $select_query
 				->order_by('LENGTH("resource")', 'ASC')
 				->find_all()->as_array();
 		}
 
-		return ACL::$_rules;
+		return AACL::$_rules;
 	}
 
 	/**
@@ -280,17 +280,17 @@ class ACL {
 	 */
 	public static function list_resources($resource_id = FALSE)
 	{
-		if ( ! isset(ACL::$_resources))
+		if ( ! isset(AACL::$_resources))
 		{
 			// Find all classes in the application and modules
-			$classes = ACL::_list_classes();
+			$classes = AACL::_list_classes();
 
-			// Loop through classes and see if they implement ACL_Resource
+			// Loop through classes and see if they implement AACL_Resource
 			foreach ($classes as $class_name)
 			{
 				$class = new ReflectionClass($class_name);
 
-				if ($class->implementsInterface('ACL_Resource'))
+				if ($class->implementsInterface('AACL_Resource'))
 				{
 					// Ignore interfaces and abstract classes
 					if ($class->isInterface() || $class->isAbstract())
@@ -302,7 +302,7 @@ class ACL {
 					$resource = $class->getMethod('acl_instance')->invoke($class_name, $class_name);
 
 					// Get resource info
-					ACL::$_resources[$resource->acl_id()] = array(
+					AACL::$_resources[$resource->acl_id()] = array(
 						'actions' => $resource->acl_actions(),
 						'conditions' => $resource->acl_conditions(),
 					);
@@ -314,14 +314,14 @@ class ACL {
 
 		if ($resource_id === TRUE)
 		{
-			return array_keys(ACL::$_resources);
+			return array_keys(AACL::$_resources);
 		}
 		elseif ($resource_id)
 		{
-			return isset(ACL::$_resources[$resource_id]) ? ACL::$_resources[$resource_id] : NULL;
+			return isset(AACL::$_resources[$resource_id]) ? AACL::$_resources[$resource_id] : NULL;
 		}
 
-		return ACL::$_resources;
+		return AACL::$_resources;
 	}
 
 	protected static function _list_classes($files = NULL)
@@ -367,7 +367,7 @@ class ACL {
 		{
 			if (is_array($path))
 			{
-				$classes = array_merge($classes, ACL::_list_classes($path));
+				$classes = array_merge($classes, AACL::_list_classes($path));
 			}
 			else
 			{
@@ -414,4 +414,4 @@ class ACL {
 	 */
 	protected function __clone() {}
 
-} // End  ACL_Core
+} // End  AACL_Core

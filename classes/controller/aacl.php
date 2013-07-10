@@ -4,17 +4,17 @@
  * Base class for access controlled controllers
  *
  * @see            http://github.com/banks/aacl
- * @package        ACL
+ * @package        AACL
  * @uses        Auth
  * @uses        Sprig
  * @author        Paul Banks
  * @copyright    (c) Paul Banks 2010
  * @license        MIT
  */
-class Controller_ACL extends Controller implements ACL_Resource {
+class Controller_AACL extends Controller implements AACL_Resource {
 
 	/**
-	 * ACL_Resource::acl_id() implementation
+	 * AACL_Resource::acl_id() implementation
 	 *
 	 * @return    string
 	 */
@@ -27,7 +27,7 @@ class Controller_ACL extends Controller implements ACL_Resource {
 	}
 
 	/**
-	 * ACL_Resource::acl_actions() implementation
+	 * AACL_Resource::acl_actions() implementation
 	 *
 	 * @param    bool $return_current [optional]
 	 * @return    mixed
@@ -57,11 +57,11 @@ class Controller_ACL extends Controller implements ACL_Resource {
 	}
 
 	/**
-	 * ACL_Resource::acl_conditions() implementation
+	 * AACL_Resource::acl_conditions() implementation
 	 *
 	 * @param    Model_User $user [optional] logged in user model
 	 * @param    string     $condition [optional] condition to test
-	 * @throws   ACL_Exception
+	 * @throws   AACL_Exception
 	 * @return   mixed
 	 */
 	public function acl_conditions(Model_User $user = NULL, $condition = NULL)
@@ -77,7 +77,7 @@ class Controller_ACL extends Controller implements ACL_Resource {
 	}
 
 	/**
-	 * ACL_Resource::acl_instance() implementation
+	 * AACL_Resource::acl_instance() implementation
 	 *
 	 * Note that the object instance returned should not be used for anything except querying the acl_* methods
 	 *
@@ -102,4 +102,4 @@ class Controller_ACL extends Controller implements ACL_Resource {
 		return $instance;
 	}
 
-} // End Controller_ACL_Core
+} // End Controller_AACL_Core

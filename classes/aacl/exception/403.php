@@ -4,14 +4,14 @@
  * 403 "Permission denied" exception
  *
  * @see            http://github.com/banks/aacl
- * @package        ACL
+ * @package        AACL
  * @uses        Auth
  * @uses        Sprig
  * @author        Paul Banks
  * @copyright    (c) Paul Banks 2010
  * @license        MIT
  */
-class ACL_Exception_403 extends ACL_Exception {
+class AACL_Exception_403 extends AACL_Exception {
 
 	/**
 	 * @var   integer    HTTP 401 Unauthorized
