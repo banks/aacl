@@ -26,18 +26,6 @@ class AACL {
 	protected static $_resources;
 
 	/**
-	 * Returns the currently logged in user
-	 *
-	 * @return Model_User logged in user's instance or NULL pointer
-	 * @return NULL
-	 */
-	public static function get_loggedin_user()
-	{
-		return Auth::instance()->get_user();
-	}
-
-
-	/**
 	 * Grant access to $role for resource
 	 *
 	 * @param string|Model_Role $role string role name or Model_Role object [optional]
