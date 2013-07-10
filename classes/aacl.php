@@ -1,7 +1,7 @@
 <?php defined('SYSPATH') or die ('No direct script access.');
 
 /**
- * Another AACL
+ * Another ACL
  *
  * @see            http://github.com/banks/aacl
  * @package        AACL
