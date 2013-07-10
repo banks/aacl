@@ -2,291 +2,404 @@
 
 /**
  * Another ACL
- * 
- * @see			http://github.com/banks/aacl
- * @package		AACL
- * @uses		Auth
- * @uses		Sprig
- * @author		Paul Banks
- * @copyright	(c) Paul Banks 2010
- * @license		MIT
+ *
+ * @see            http://github.com/banks/aacl
+ * @package        AACL
+ * @uses        Auth
+ * @uses        ORM
+ * @author        Paul Banks
+ * @copyright    (c) Paul Banks 2010
+ * @license        MIT
  */
-class AACL
-{
+class AACL {
+
 	/**
 	 * All rules that apply to the currently logged in user
-	 * 
-	 * @var	array	contains Model_AACL_Rule objects
+	 *
+	 * @var    array    contains Model_AACL_Rule objects
 	 */
 	protected static $_rules;
-	
+
+	/**
+	 * @var array
+	 */
+	protected static $_resources;
+
 	/**
 	 * Grant access to $role for resource
-	 * 
-	 * @param	mixed	string role name or Model_Role object
-	 * @param	string	resource identifier
-	 * @param	string	action [optional]
-	 * @param	string	condition [optional]
-	 * @return 	void
+	 *
+	 * @param string|Model_Role $role string role name or Model_Role object [optional]
+	 * @param string            $resource resource identifier [optional]
+	 * @param string            $action action [optional]
+	 * @param string            $condition condition [optional]
+	 * @throws AACL_Exception
+	 * @return void
 	 */
-	public static function grant($role, $resource, $action = NULL, $condition = NULL)
+	public static function grant($role = NULL, $resource = NULL, $action = NULL, $condition = NULL)
 	{
-		// Normalise $role
-		if ( ! $role instanceof Model_Role)
+		// if $role is null — we grant this to everyone
+		if ( ! is_null($role))
 		{
-			$role = Sprig::factory('role', array('name' => $role))->load();
+			// Normalize $role
+			$role = AACL::normalize_role($role);
+
+			// Check role exists
+			if ( ! $role->loaded())
+			{
+				throw new AACL_Exception('Unknown role :role passed to AACL::grant()',
+					array(':role' => $role->name));
+			}
+
 		}
-		
-		// Check role exists
-		if ( ! $role->loaded())
-		{
-			throw new AACL_Exception('Unknown role :role passed to AACL::grant()',
-				array(':role' => $role->name));
-		}
-		
+
 		// Create rule
-		Sprig::factory('aacl_rule', array(
-			'role' => $role->id,
-			'resource' => $resource,
-			'action' => $action,
-			'condition' => $condition,
-		))->create();
+		AACL::create_rule(
+			array(
+				'role_id' => $role,
+				'resource' => $resource,
+				'action' => $action,
+				'condition' => $condition,
+			)
+		);
 	}
-	
+
 	/**
 	 * Revoke access to $role for resource
-	 * 
-	 * @param	mixed	string role name or Model_Role object
-	 * @param	string	resource identifier
-	 * @param	string	action [optional]
-	 * @param	string	condition [optional]
-	 * @return 	void
+	 * CHANGED: now accepts NULL role
+	 *
+	 * @param    string|Model_Role $role role name or Model_Role object [optional]
+	 * @param    string            $resource resource identifier [optional]
+	 * @param    string            $action action [optional]
+	 * @param    string            $condition condition [optional]
+	 * @return    void
 	 */
-	public static function revoke($role, $resource, $action = NULL, $condition = NULL)
+	public static function revoke($role = NULL, $resource = NULL, $action = NULL, $condition = NULL)
 	{
-		// Normalise $role
-		if ( ! $role instanceof Model_Role)
+		$model = ORM::factory('AACL_Rule');
+
+		if (is_null($role))
 		{
-			$role = Sprig::factory('role', array('name' => $role))->load();
+			$model->where('role_id', 'IS', NULL);
 		}
-		
-		// Check role exists
-		if ( ! $role->loaded())
+		else
 		{
-			// Just return without deleting anything
-			return;
+			// Normalize $role
+			$role = AACL::normalize_role($role);
+
+			// Check role exists
+			if ( ! $role->loaded())
+			{
+				// Just return without deleting anything
+				return;
+			}
+
+			$model->where('role_id', '=', $role->id);
 		}
-		
-		$model = Sprig::factory('aacl_rule', array(
-			'role' => $role->id,
-		));
-		
-		if ($resource !== '*')
+
+		if ( ! is_null($resource))
 		{
-			// Add normal reources, resource '*' will delete all rules for this role
-			$model->resource = $resource;
+			// Add normal resources, resource NULL will delete all rules
+			$model->and_where('resource', '=', $resource);
+
+			if ( ! is_null($action))
+			{
+				$model->and_where('action', '=', $action);
+			}
+
+			if ( ! is_null($condition))
+			{
+				$model->and_where('condition', '=', $condition);
+			}
 		}
-		
-		if ($resource !== '*' AND ! is_null($action))
-		{
-			$model->action = $action;
-		}
-		
-		if ($resource !== '*' AND ! is_null($condition))
-		{
-			$model->condition = $condition;
-		}
-		
-		// Delete rule
-		$model->delete();
+
+		$rules = $model->find_all();
+
+        foreach ($rules as $rule)
+        {
+            $rule->delete();
+        }
 	}
-	
+
+	/**
+	 * Method, that allows to check any rule from database in any place of project.
+	 * Works with string presentations of resources, actions, roles and conditions
+	 *
+	 * @param AACL_Resource $resource
+	 * @param string        $action
+	 * @return bool
+	 */
+	public static function access(AACL_Resource $resource, $action = NULL)
+	{
+		try
+		{
+			AACL::check($resource, $action);
+		}
+		catch (AACL_Exception $e)
+		{
+			return FALSE;
+		}
+
+		return TRUE;
+	}
+
 	/**
 	 * Checks user has permission to access resource
-	 * 
-	 * @param	AACL_Resource	AACL_Resource object being requested
-	 * @param	string			action identifier [optional]
-	 * @throw	AACL_Exception	To identify permission or authentication failure
-	 * @return	void
+	 * works with unauthenticated users (role_id = NULL)
+	 *
+	 * @param    AACL_Resource $resource AACL_Resource object being requested
+	 * @param    string        $action action identifier [optional]
+	 * @throws   AACL_Exception_401 To identify permission or authentication failure
+	 * @throws   AACL_Exception_403 To identify permission or authentication failure
+	 * @return   void
 	 */
 	public static function check(AACL_Resource $resource, $action = NULL)
 	{
-		if ($user = Auth::instance()->get_user())
+		$user = AACL::get_loggedin_user();
+
+		// User is logged in, check rules
+		$rules = AACL::_get_rules($user);
+
+		/**
+		 * @var Model_AACL_Rule $rule
+		 */
+		foreach ($rules as $rule)
 		{
-			// User is logged in, check rules
-			$rules = self::_get_rules($user);
-			
-			foreach ($rules as $rule)
+			if ($rule->allows_access_to($resource, $action, $user))
 			{
-				if ($rule->allows_access_to($resource, $action))
-				{
-					// Access granted, just return
-					return;
-				}
+				// Access granted, just return
+				return;
 			}
-			
-			// No access rule matched
+		}
+
+		// No access rule matched
+		if ($user)
+		{
 			throw new AACL_Exception_403;
 		}
 		else
 		{
-			// User is not logged in and the need to be
 			throw new AACL_Exception_401;
 		}
 	}
-	
-	/**
-	 * Get all rules that apply to user
-	 * 
-	 * @param 	Model_User 	$user
-	 * @param 	bool		[optional] Force reload from DB default FALSE
-	 * @return 	array
+
+    /**
+     * Almost the same as check() but doesn't throw exceptions and answer is boolean
+	 *
+	 * @param    AACL_Resource $resource AACL_Resource object being requested
+	 * @param    string        $action action identifier [optional]
+	 * @return   boolean 
 	 */
-	protected static function _get_rules(Model_User $user, $force_load = FALSE)
+	public static function check_if(AACL_Resource $resource, $action = NULL)
 	{
-		if ( ! isset(self::$_rules) OR $force_load)
+		$user = AACL::get_loggedin_user();
+
+		// User is logged in, check rules
+		$rules = AACL::_get_rules($user);
+
+		/**
+		 * @var Model_AACL_Rule $rule
+		 */
+		foreach ($rules as $rule)
 		{
-			// Get rule model instance
-			$model = Sprig::factory('aacl_rule');
-		
-			self::$_rules = Sprig::factory('aacl_rule')
-							->load(DB::select()
-										// Select all rules that apply to any of the user's roles
-										->where($model->field('role')->column, 'IN', $user->roles->as_array(NULL, 'id'))
-										// Order by resource length as this will mostly mean that
-										// Less specific rules come first making the checking quicker
-										->order_by('LENGTH("'.$model->field('resource')->column.'")', 'ASC')
-							, FALSE)->as_array();
+			if ($rule->allows_access_to($resource, $action, $user))
+			{
+				return TRUE;
+			}
 		}
 
-		return self::$_rules;
+        return FALSE;
 	}
-	
-	protected static $_resources;
-	
+
 	/**
-	 * Returns a list of all valid resource objects based on the filesstem adn reflection
-	 * 
-	 * @param	mixed	string resource_id [optional] if provided, the info for that specific resource ID is returned, 
-	 * 					if TRUE a flat array of just the ids is returned
-	 * @return	array 
+	 * Create an AACL rule
+	 *
+	 * @param array $fields optional fields' values
+	 *
+	 * @return void
+	 */
+	public static function create_rule(array $fields = array())
+	{
+		ORM::factory('AACL_Rule')->values($fields)->create();
+	}
+
+	/**
+	 * Get all rules that apply to user
+	 *
+	 * CHANGED
+	 *
+	 * @param mixed $user Model_User|Model_Role|bool User, role or everyone
+	 * @param bool  $force_load [optional] Force reload from DB default FALSE
+	 * @return Database_Result
+	 */
+	public static function _get_rules($user = FALSE, $force_load = FALSE)
+	{
+		if ( ! isset(AACL::$_rules) || $force_load)
+		{
+			$select_query = ORM::factory('AACL_Rule')
+				// User is guest
+				->where('role_id', '=', NULL);
+
+			// Get rules for user
+			if ($user instanceof Model_User and $user->loaded())
+			{
+				AACL::$_rules = $select_query->or_where('role_id', 'IN', $user->roles->find_all()->as_array());
+			}
+			// Get rules for role
+			elseif ($user instanceof Model_Role and $user->loaded())
+			{
+				AACL::$_rules = $select_query->or_where('role_id', '=', $user->id);
+			}
+
+			AACL::$_rules = $select_query
+				->order_by('LENGTH("resource")', 'ASC')
+				->find_all()->as_array();
+		}
+
+		return AACL::$_rules;
+	}
+
+	/**
+	 * Returns a list of all valid resource objects based on the filesstem adn
+	 * FIXED
+	 *
+	 * @param    string|bool string resource_id [optional] if provided, the info for that specific resource ID is returned,
+	 *                    if TRUE a flat array of just the ids is returned
+	 * @return    array
 	 */
 	public static function list_resources($resource_id = FALSE)
-	{		
-		if ( ! isset(self::$_resources))
+	{
+		if ( ! isset(AACL::$_resources))
 		{
 			// Find all classes in the application and modules
-			$classes = self::_list_classes();
-			
-			// Loop throuch classes and see if they implement AACL_Resource
-			foreach ($classes as $i => $class_name)
+			$classes = AACL::_list_classes();
+
+			// Loop through classes and see if they implement AACL_Resource
+			foreach ($classes as $class_name)
 			{
 				$class = new ReflectionClass($class_name);
-				
+
 				if ($class->implementsInterface('AACL_Resource'))
 				{
-					// Ignore interfaces
-					if ($class->isInterface())
+					// Ignore interfaces and abstract classes
+					if ($class->isInterface() || $class->isAbstract())
 					{
 						continue;
 					}
-					
-					// Ignore abstract classes
-					if ($class->isAbstract())
-					{
-						continue;
-					}
-	
+
 					// Create an instance of the class
 					$resource = $class->getMethod('acl_instance')->invoke($class_name, $class_name);
-					
+
 					// Get resource info
-					self::$_resources[$resource->acl_id()] = array(
-						'actions' 		=> $resource->acl_actions(),
-						'conditions'	=> $resource->acl_conditions(),
+					AACL::$_resources[$resource->acl_id()] = array(
+						'actions' => $resource->acl_actions(),
+						'conditions' => $resource->acl_conditions(),
 					);
-					
 				}
-				
+
 				unset($class);
-			}			
+			}
 		}
-		
+
 		if ($resource_id === TRUE)
 		{
-			return array_keys(self::$_resources);
+			return array_keys(AACL::$_resources);
 		}
 		elseif ($resource_id)
 		{
-			return isset(self::$_resources[$resource_id]) ? self::$_resources[$resource_id] : NULL;
+			return isset(AACL::$_resources[$resource_id]) ? AACL::$_resources[$resource_id] : NULL;
 		}
-		
-		return self::$_resources;
+
+		return AACL::$_resources;
 	}
-	
+
 	protected static function _list_classes($files = NULL)
 	{
 		if (is_null($files))
 		{
 			// Remove core module paths form search
 			$loaded_modules = Kohana::modules();
-			
-			$exclude_modules = array('database', 'orm', 'sprig', 'auth', 'sprig-auth', 
-				'userguide', 'image', 'codebench', 'unittest', 'pagination');
-				
+
+			$exclude_modules = array(
+				'database',
+				'orm',
+				'auth',
+				'userguide',
+				'image',
+				'codebench',
+				'unittest',
+				'pagination',
+				'cache',
+			);
+
 			$paths = Kohana::include_paths();
-			
+
 			// Remove known core module paths
 			foreach ($loaded_modules as $module => $path)
 			{
 				if (in_array($module, $exclude_modules))
-				{					
-					unset($paths[array_search($path.DIRECTORY_SEPARATOR, $paths)]);
+				{
+					// Doesn't works properly — double slash on the end
+					//	unset($paths[array_search($path.DIRECTORY_SEPARATOR, $paths)]);
+					unset($paths[array_search($path, $paths)]);
 				}
-			}	
-			
+			}
+
 			// Remove system path
 			unset($paths[array_search(SYSPATH, $paths)]);
-			
-			$files = Kohana::list_files('classes', $paths);
+			$files = array_merge(Kohana::list_files('classes'.DIRECTORY_SEPARATOR.'controller', $paths), Kohana::list_files('classes'.DIRECTORY_SEPARATOR.'model', $paths));
 		}
-		
+
 		$classes = array();
-		
+
 		foreach ($files as $name => $path)
 		{
 			if (is_array($path))
 			{
-				$classes = array_merge($classes, self::_list_classes($path));
+				$classes = array_merge($classes, AACL::_list_classes($path));
 			}
 			else
 			{
 				// Strip 'classes/' off start
 				$name = substr($name, 8);
-				
+
 				// Strip '.php' off end
 				$name = substr($name, 0, 0 - strlen(EXT));
-				
+
 				// Convert to class name
 				$classes[] = str_replace(DIRECTORY_SEPARATOR, '_', $name);
 			}
 		}
-		
+
 		return $classes;
 	}
-	
+
+	/**
+	 * Normalize role
+	 *
+	 * @param Model_Role|string $role role instance or role identifier
+	 *
+	 * @return Model_Role role instance
+	 */
+	protected static function normalize_role($role)
+	{
+		if ( ! $role instanceof Model_Role)
+		{
+			return ORM::factory('role')->where('name', '=', $role)->find();
+		}
+
+		return $role;
+	}
+
 	/**
 	 * Force static access
-	 * 
-	 * @return	void 
 	 */
 	protected function __construct() {}
-	
+
 	/**
 	 * Force static access
-	 * 
-	 * @return	void 
+	 *
+	 * @return void
 	 */
 	protected function __clone() {}
-	
-} // End  AACL
+
+} // End  AACL_Core
